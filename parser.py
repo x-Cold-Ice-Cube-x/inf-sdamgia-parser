@@ -1,14 +1,12 @@
-import webbrowser
-
 from bs4 import BeautifulSoup
 from requests import Session
 from enum import Enum
 from pydantic import BaseModel
-from time import sleep
 
 
 class Types(Enum):
-    INFORMATICS = "https://inf-ege.sdamgia.ru/test"
+    INF = "https://inf-ege.sdamgia.ru/test"
+    MATH = "https://math-ege.sdamgia.ru/test"
 
 
 class Application(BaseModel):
@@ -16,21 +14,16 @@ class Application(BaseModel):
 
     ege_type: str
     output: str = None
-    timeout: int = None
 
-    def parse(self, test_url: str):
-        answers, solved_post_payload = self.__parse_answers_url(self.__parse_test_url(url=test_url))
+    def parse(self, test_id: str):
+        answers, solved_post_payload = self.__parse_answers_url(self.__parse_test_url(url=f"{self.ege_type}?id={test_id}"))
         if self.output is None:
             print("\n".join(answers))
             return
         self.__saving(answers)
 
-        if self.timeout is not None:
-            sleep(self.timeout)
-            self.__open_solved_page(solved_post_payload=solved_post_payload)
-
     def __parse_test_url(self, url: str) -> dict:
-        post_payload = {"is_cr": 0, "stat_id": 0, "timer": 0, "a": "check"}
+        post_payload = {"is_cr": 0, "stat_id": 0, "timer": 1, "a": "check"}
         test_soup = BeautifulSoup(self.__session.get(url=url).content, "lxml")
 
         # hash
@@ -56,12 +49,7 @@ class Application(BaseModel):
         with open(self.output, "w") as file:
             file.write("\n".join(answers))
 
-    def __open_solved_page(self, solved_post_payload: dict) -> None:
-        webbrowser.open(self.__session.post(url=self.ege_type, data=solved_post_payload).url)
-
-
-
 
 if __name__ == "__main__":
-    inf = Application(ege_type=Types.INFORMATICS, output="17.txt", timeout=2)
+    inf = Application(ege_type=Types.INF, output="17.txt")
     inf.parse(input())
